@@ -1,0 +1,32 @@
+name: Report Bug
+description: Report a reproducible flutter_licensing problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Never include real certificates, signatures, Core IDs, private keys, or production public keys. Use synthetic data.
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+    validations:
+      required: true
+  - type: input
+    id: flutter
+    attributes:
+      label: Flutter version
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description and minimal reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
