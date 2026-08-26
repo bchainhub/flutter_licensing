@@ -1,0 +1,13 @@
+name: flutter_licensing_example
+publish_to: none
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_licensing:
+    path: ..
+dev_dependencies:
+  flutter_lints: ^6.0.0
+flutter:
+  uses-material-design: true
