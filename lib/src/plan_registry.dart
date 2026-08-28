@@ -1,3 +1,4 @@
+/// Maps numeric plan identifiers to display names.
 final class PlanRegistry {
   final Map<int, String> _names = {};
   void bind(int planId, String name) {
