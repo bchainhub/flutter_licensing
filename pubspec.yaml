@@ -1,6 +1,6 @@
 name: flutter_licensing
 description: Offline Ed25519 license verification and feature entitlements for Flutter applications.
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/bchainhub/flutter_licensing
 repository: https://github.com/bchainhub/flutter_licensing
 issue_tracker: https://github.com/bchainhub/flutter_licensing/issues
@@ -13,8 +13,9 @@ dependencies:
   cryptography: ^2.7.0
   flutter:
     sdk: flutter
-  flutter_secure_storage: ^9.2.4
-  package_info_plus: ^8.3.1
+  flutter_secure_storage: ^11.0.0
+  package_info_plus: ^10.2.0
+  package_info_plus_platform_interface: ^4.1.0
 
 dev_dependencies:
   flutter_test:

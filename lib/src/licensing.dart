@@ -3,8 +3,10 @@ import 'license.dart';
 import 'storage.dart';
 import 'validation.dart';
 
+/// Controls when an imported license replaces the stored certificate.
 enum LicenseReplacementPolicy { newerExpiration, always }
 
+/// Coordinates license storage, validation, and feature entitlement checks.
 final class FlutterLicensing {
   FlutterLicensing(
       {required LicenseVerifier verifier,

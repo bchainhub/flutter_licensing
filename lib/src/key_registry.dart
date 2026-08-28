@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 
+/// Holds trusted Ed25519 public keys indexed by key identifier.
 final class LicenseKeyRegistry {
   final Map<String, Uint8List> _keys = {};
   void add({required String keyId, required String publicKey}) =>

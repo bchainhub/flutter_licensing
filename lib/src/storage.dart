@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// Persists an encoded license certificate.
 abstract interface class LicenseStorage {
   Future<void> saveLicense(String certificate);
   Future<String?> readLicense();
@@ -7,6 +8,7 @@ abstract interface class LicenseStorage {
   Future<bool> hasLicense();
 }
 
+/// Persists a license certificate in platform-protected secure storage.
 final class SecureLicenseStorage implements LicenseStorage {
   const SecureLicenseStorage(
       {FlutterSecureStorage storage = const FlutterSecureStorage(),
@@ -25,6 +27,7 @@ final class SecureLicenseStorage implements LicenseStorage {
   Future<bool> hasLicense() async => (await readLicense()) != null;
 }
 
+/// Keeps a license certificate in memory for tests or ephemeral sessions.
 final class InMemoryLicenseStorage implements LicenseStorage {
   String? _certificate;
   @override

@@ -1,3 +1,8 @@
+## 0.1.1
+
+- Update direct dependencies to their current stable releases.
+- Improve public API documentation coverage.
+
 ## 0.1.0
 
 - Initial offline Ed25519 license verification API.

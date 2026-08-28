@@ -1,3 +1,4 @@
+/// Immutable claims extracted from a verified license certificate.
 final class License {
   const License(
       {required this.version,

@@ -5,6 +5,7 @@ import 'key_registry.dart';
 import 'license.dart';
 import 'product_identifier.dart';
 
+/// Describes the outcome of validating a license certificate.
 enum LicenseValidationStatus {
   valid,
   malformed,
@@ -17,6 +18,7 @@ enum LicenseValidationStatus {
   expired
 }
 
+/// Contains a validation status and the decoded license when available.
 final class LicenseValidationResult {
   const LicenseValidationResult(this.status, {this.license});
   final LicenseValidationStatus status;
@@ -29,6 +31,7 @@ final class LicenseValidationResult {
       : license!.expiresAt.difference(now.toUtc());
 }
 
+/// Verifies signed license certificates against trusted keys and application data.
 final class LicenseVerifier {
   LicenseVerifier(
       {required LicenseKeyRegistry keyRegistry,

@@ -1,9 +1,11 @@
 import 'validation.dart';
 
+/// Identifies a feature controlled by a license entitlement.
 extension type const LicenseFeature(String id) {
   bool get isValid => id.isNotEmpty && id.length <= 128;
 }
 
+/// Maps features to free access or permitted plan identifiers.
 final class FeatureEntitlements {
   final Set<String> _free = {};
   final Map<String, Set<int>> _plans = {};
@@ -28,6 +30,7 @@ final class FeatureEntitlements {
   }
 }
 
+/// Describes why access to a licensed feature was granted or denied.
 enum LicenseAccessStatus {
   allowed,
   noLicense,
@@ -39,6 +42,7 @@ enum LicenseAccessStatus {
   coreIdMismatch
 }
 
+/// Contains a feature-access decision and its optional validation result.
 final class LicenseAccessResult {
   const LicenseAccessResult(this.status, {this.validation});
   final LicenseAccessStatus status;

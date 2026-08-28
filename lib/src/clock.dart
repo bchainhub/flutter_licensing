@@ -1,10 +1,12 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// Persists the last observed trusted UTC time.
 abstract interface class TrustedTimeStorage {
   Future<DateTime?> readLastTrustedTime();
   Future<void> writeLastTrustedTime(DateTime value);
 }
 
+/// Stores trusted time in platform-protected secure storage.
 final class SecureTrustedTimeStorage implements TrustedTimeStorage {
   const SecureTrustedTimeStorage({
     FlutterSecureStorage storage = const FlutterSecureStorage(),
@@ -30,6 +32,7 @@ final class SecureTrustedTimeStorage implements TrustedTimeStorage {
       );
 }
 
+/// Stores trusted time in memory for tests and ephemeral sessions.
 final class InMemoryTrustedTimeStorage implements TrustedTimeStorage {
   DateTime? _value;
   @override
@@ -39,6 +42,7 @@ final class InMemoryTrustedTimeStorage implements TrustedTimeStorage {
       _value = value.toUtc();
 }
 
+/// Prevents local clock rollback by retaining the latest trusted time.
 final class TrustedClock {
   TrustedClock(
       {required TrustedTimeStorage storage, DateTime Function()? systemNow})
