@@ -1,3 +1,8 @@
+## 0.2.0
+
+- Add explicit separate and replace licensing models.
+- Replace a different plan immediately in replace mode while preserving normal same-plan extension behavior.
+
 ## 0.1.1
 
 - Update direct dependencies to their current stable releases.

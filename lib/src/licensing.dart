@@ -3,8 +3,14 @@ import 'license.dart';
 import 'storage.dart';
 import 'validation.dart';
 
-/// Controls when an imported license replaces the stored certificate.
-enum LicenseReplacementPolicy { newerExpiration, always }
+/// Controls how an imported license for a different plan is handled.
+enum LicenseModel {
+  /// Keeps plans separate. A certificate for a different plan is not imported.
+  separate,
+
+  /// Immediately replaces the current plan with the imported plan.
+  replace,
+}
 
 /// Coordinates license storage, validation, and feature entitlement checks.
 final class FlutterLicensing {
@@ -40,23 +46,26 @@ final class FlutterLicensing {
   }
 
   Future<LicenseValidationResult> importLicense(String certificate,
-      {LicenseReplacementPolicy replacementPolicy =
-          LicenseReplacementPolicy.newerExpiration}) async {
+      {LicenseModel model = LicenseModel.separate}) async {
     final candidate =
         await _verifier.verify(certificate, expectedCoreId: expectedCoreId);
     if (!candidate.isValid) return candidate;
-    if (replacementPolicy == LicenseReplacementPolicy.newerExpiration &&
-        _certificate != null) {
+    if (_certificate != null) {
       final existing =
           await _verifier.verify(_certificate!, expectedCoreId: expectedCoreId);
       if (existing.isValid) {
         final oldLicense = existing.license!;
         final newLicense = candidate.license!;
-        final sameSubscription = oldLicense.coreId == newLicense.coreId &&
+        final sameLicense = oldLicense.coreId == newLicense.coreId &&
             oldLicense.product == newLicense.product &&
             oldLicense.planId == newLicense.planId;
-        if (!sameSubscription ||
-            !newLicense.expiresAt.isAfter(oldLicense.expiresAt)) {
+        final replacesPlan = model == LicenseModel.replace &&
+            oldLicense.coreId == newLicense.coreId &&
+            oldLicense.product == newLicense.product &&
+            oldLicense.planId != newLicense.planId;
+        if ((!sameLicense && !replacesPlan) ||
+            (sameLicense &&
+                !newLicense.expiresAt.isAfter(oldLicense.expiresAt))) {
           return existing;
         }
       }
