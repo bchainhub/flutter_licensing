@@ -81,6 +81,44 @@ void main() {
         LicenseAccessStatus.allowed);
   });
 
+  test('separate licensing keeps a different current plan', () async {
+    final storage = InMemoryLicenseStorage();
+    final licensing = FlutterLicensing(verifier: verifier, storage: storage);
+    await licensing.importLicense(await certificate(planId: 1));
+
+    final result = await licensing.importLicense(await certificate(planId: 2));
+
+    expect(result.license!.planId, 1);
+    expect(licensing.currentLicense!.planId, 1);
+  });
+
+  test('replace licensing immediately upgrades or downgrades', () async {
+    final storage = InMemoryLicenseStorage();
+    final licensing = FlutterLicensing(verifier: verifier, storage: storage);
+    await licensing.importLicense(await certificate(planId: 1));
+
+    var result = await licensing.importLicense(await certificate(planId: 2),
+        model: LicenseModel.replace);
+    expect(result.license!.planId, 2);
+
+    result = await licensing.importLicense(await certificate(planId: 1),
+        model: LicenseModel.replace);
+    expect(result.license!.planId, 1);
+  });
+
+  test('same plan only extends to a later expiration', () async {
+    final storage = InMemoryLicenseStorage();
+    final licensing = FlutterLicensing(verifier: verifier, storage: storage);
+    final later = now.add(const Duration(days: 60));
+    await licensing.importLicense(await certificate(expires: later));
+
+    final result = await licensing.importLicense(
+        await certificate(expires: now.add(const Duration(days: 10))),
+        model: LicenseModel.replace);
+
+    expect(result.license!.expiresAt, later);
+  });
+
   test('trusted clock never moves backwards', () async {
     final storage = InMemoryTrustedTimeStorage();
     var system = now;

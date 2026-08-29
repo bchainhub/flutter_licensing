@@ -42,7 +42,10 @@ final licensing = FlutterLicensing(
   entitlements: rules,
 );
 await licensing.initialize();
-final result = await licensing.importLicense(certificateText);
+final result = await licensing.importLicense(
+  certificateText,
+  model: LicenseModel.replace,
+);
 final allowed = await licensing.isFeatureAllowed(const LicenseFeature('export'));
 ```
 
@@ -54,7 +57,9 @@ Keys may instead be supplied as 32 raw bytes, base64/base64url, or an RFC 8410 P
 - Arbitrary non-negative `planId` values are valid; optional names never affect validity.
 - Free features work without a license.
 - Optional `expectedCoreId` prevents sharing between identities.
-- Import validates before storage and, by default, replaces only the same Core ID/product/plan with a later expiration. Different opaque plans require an explicit host decision.
+- Import validates before storage. Same-plan certificates extend only when their expiration is later.
+- `LicenseModel.separate` (the default) keeps a current license when a different plan is imported.
+- `LicenseModel.replace` immediately replaces a different plan. A higher plan ID is an upgrade and a lower plan ID is a downgrade; both behave identically during import.
 - Time is UTC and valid in `[not_before, expires_at)`. `TrustedClock` provides rollback resistance only as a best effort; a permanently offline, attacker-controlled client cannot establish trustworthy wall-clock time.
 
 `SecureTrustedTimeStorage` persists the clock lower bound using platform secure storage. The included in-memory implementation is intended for tests.
