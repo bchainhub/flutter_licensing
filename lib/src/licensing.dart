@@ -1,6 +1,7 @@
 import 'entitlements.dart';
 import 'license.dart';
 import 'storage.dart';
+import 'sync.dart';
 import 'validation.dart';
 
 /// Controls how an imported license for a different plan is handled.
@@ -18,13 +19,21 @@ final class FlutterLicensing {
       {required LicenseVerifier verifier,
       required LicenseStorage storage,
       FeatureEntitlements? entitlements,
-      this.expectedCoreId})
+      this.expectedId,
+      this.expectedDeviceId,
+      @Deprecated('Use expectedId') this.expectedCoreId})
       : _verifier = verifier,
         _storage = storage,
-        entitlements = entitlements ?? FeatureEntitlements();
+        entitlements = entitlements ?? FeatureEntitlements(),
+        assert(expectedId == null ||
+            expectedCoreId == null ||
+            expectedId == expectedCoreId);
   final LicenseVerifier _verifier;
   final LicenseStorage _storage;
   final FeatureEntitlements entitlements;
+  final String? expectedId;
+  final String? expectedDeviceId;
+  @Deprecated('Use expectedId')
   final String? expectedCoreId;
   String? _certificate;
   LicenseValidationResult? _lastResult;
@@ -41,18 +50,21 @@ final class FlutterLicensing {
       return _lastResult =
           const LicenseValidationResult(LicenseValidationStatus.malformed);
     }
-    return _lastResult =
-        await _verifier.verify(_certificate!, expectedCoreId: expectedCoreId);
+    return _lastResult = await _verifier.verify(_certificate!,
+        expectedId: expectedId ?? expectedCoreId,
+        expectedDeviceId: expectedDeviceId);
   }
 
   Future<LicenseValidationResult> importLicense(String certificate,
       {LicenseModel model = LicenseModel.separate}) async {
-    final candidate =
-        await _verifier.verify(certificate, expectedCoreId: expectedCoreId);
+    final candidate = await _verifier.verify(certificate,
+        expectedId: expectedId ?? expectedCoreId,
+        expectedDeviceId: expectedDeviceId);
     if (!candidate.isValid) return candidate;
     if (_certificate != null) {
-      final existing =
-          await _verifier.verify(_certificate!, expectedCoreId: expectedCoreId);
+      final existing = await _verifier.verify(_certificate!,
+          expectedId: expectedId ?? expectedCoreId,
+          expectedDeviceId: expectedDeviceId);
       if (existing.isValid) {
         final oldLicense = existing.license!;
         final newLicense = candidate.license!;
@@ -77,6 +89,35 @@ final class FlutterLicensing {
   }
 
   String? exportLicense() => _certificate;
+
+  /// Downloads active licenses, verifies every certificate, and stores the
+  /// newest verified certificate. A successful `none` or `suspended` response
+  /// removes the local certificate; network failures leave offline state intact.
+  Future<LicenseSynchronizationResult> sync(
+      AtomCyouSyncClient client, String customerId) async {
+    final payload = await client.download(customerId);
+    if (payload.status != LicenseSyncStatus.valid) {
+      await deleteLicense();
+      return LicenseSynchronizationResult(payload.status, const []);
+    }
+    final validations = <LicenseValidationResult>[];
+    for (final certificate in payload.certificates) {
+      final validation = await _verifier.verify(certificate,
+          expectedId: expectedId ?? expectedCoreId,
+          expectedDeviceId: expectedDeviceId);
+      validations.add(validation);
+    }
+    if (validations.any((validation) => !validation.isValid)) {
+      return LicenseSynchronizationResult(payload.status, validations);
+    }
+    if (payload.certificates.isNotEmpty) {
+      await _storage.saveLicense(payload.certificates.first);
+      _certificate = payload.certificates.first;
+      _lastResult = validations.first;
+    }
+    return LicenseSynchronizationResult(payload.status, validations);
+  }
+
   Future<bool> hasValidLicense() async => (await validateLicense()).isValid;
   Future<LicenseAccessResult> checkFeature(LicenseFeature feature) async {
     if (entitlements.isFree(feature)) {
@@ -98,6 +139,9 @@ final class FlutterLicensing {
       LicenseValidationStatus.notYetValid => LicenseAccessStatus.notYetValid,
       LicenseValidationStatus.invalidProduct =>
         LicenseAccessStatus.invalidProduct,
+      LicenseValidationStatus.idMismatch => LicenseAccessStatus.coreIdMismatch,
+      LicenseValidationStatus.deviceIdMismatch =>
+        LicenseAccessStatus.coreIdMismatch,
       LicenseValidationStatus.coreIdMismatch =>
         LicenseAccessStatus.coreIdMismatch,
       _ => LicenseAccessStatus.invalidLicense
@@ -112,4 +156,14 @@ final class FlutterLicensing {
     _certificate = null;
     _lastResult = null;
   }
+}
+
+final class LicenseSynchronizationResult {
+  const LicenseSynchronizationResult(this.status, this.validations);
+  final LicenseSyncStatus status;
+  final List<LicenseValidationResult> validations;
+  bool get isVerified =>
+      status == LicenseSyncStatus.valid &&
+      validations.isNotEmpty &&
+      validations.every((validation) => validation.isValid);
 }

@@ -13,6 +13,9 @@ enum LicenseValidationStatus {
   unknownKey,
   invalidSignature,
   invalidProduct,
+  idMismatch,
+  deviceIdMismatch,
+  @Deprecated('Use idMismatch')
   coreIdMismatch,
   notYetValid,
   expired
@@ -46,7 +49,9 @@ final class LicenseVerifier {
   final Ed25519 _ed25519 = Ed25519();
 
   Future<LicenseValidationResult> verify(String certificate,
-      {String? expectedCoreId}) async {
+      {String? expectedId,
+      String? expectedDeviceId,
+      @Deprecated('Use expectedId') String? expectedCoreId}) async {
     try {
       final envelope = jsonDecode(certificate);
       if (envelope is! Map<String, dynamic> ||
@@ -95,8 +100,17 @@ final class LicenseVerifier {
         return LicenseValidationResult(LicenseValidationStatus.invalidProduct,
             license: parsed);
       }
-      if (expectedCoreId != null && parsed.coreId != expectedCoreId) {
-        return LicenseValidationResult(LicenseValidationStatus.coreIdMismatch,
+      final requiredId = expectedId ?? expectedCoreId;
+      if (requiredId != null && parsed.id != requiredId) {
+        return LicenseValidationResult(
+            expectedId != null
+                ? LicenseValidationStatus.idMismatch
+                : LicenseValidationStatus.coreIdMismatch,
+            license: parsed);
+      }
+      if (expectedDeviceId != null &&
+          parsed.deviceIdHash != await _hashDeviceId(expectedDeviceId)) {
+        return LicenseValidationResult(LicenseValidationStatus.deviceIdMismatch,
             license: parsed);
       }
       final now = await _clock.now();
@@ -116,7 +130,7 @@ final class LicenseVerifier {
   }
 
   License? _parseTrusted(Map<String, dynamic> value) {
-    const exact = {
+    const required = {
       'v',
       'id',
       'license_id',
@@ -127,8 +141,9 @@ final class LicenseVerifier {
       'expires_at',
       'key_id'
     };
-    if (value.keys.toSet().difference(exact).isNotEmpty ||
-        exact.difference(value.keys.toSet()).isNotEmpty) {
+    const allowed = {...required, 'device_id_hash'};
+    if (value.keys.toSet().difference(allowed).isNotEmpty ||
+        required.difference(value.keys.toSet()).isNotEmpty) {
       return null;
     }
     final v = value['v'],
@@ -140,6 +155,7 @@ final class LicenseVerifier {
         notBefore = value['not_before'],
         expires = value['expires_at'],
         key = value['key_id'];
+    final deviceHash = value['device_id_hash'];
     if (v is! int ||
         plan is! int ||
         plan < 0 ||
@@ -150,6 +166,9 @@ final class LicenseVerifier {
         !_validString(id, 256) ||
         !_validString(product, 255) ||
         !_validString(key, 128) ||
+        (deviceHash != null &&
+            (deviceHash is! String ||
+                !RegExp(r'^[a-f0-9]{64}$').hasMatch(deviceHash))) ||
         issued < 0 ||
         notBefore < 0 ||
         expires < 0 ||
@@ -170,7 +189,8 @@ final class LicenseVerifier {
               isUtc: true),
           expiresAt:
               DateTime.fromMillisecondsSinceEpoch(expires * 1000, isUtc: true),
-          keyId: key as String);
+          keyId: key as String,
+          deviceIdHash: deviceHash as String?);
     } on RangeError {
       return null;
     }
@@ -178,4 +198,11 @@ final class LicenseVerifier {
 
   bool _validString(Object? value, int max) =>
       value is String && value.isNotEmpty && value.length <= max;
+
+  Future<String> _hashDeviceId(String value) async {
+    final digest = await Sha256().hash(utf8.encode(value));
+    return digest.bytes
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
+  }
 }

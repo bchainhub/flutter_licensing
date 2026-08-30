@@ -40,8 +40,17 @@ final licensing = FlutterLicensing(
   verifier: verifier,
   storage: const SecureLicenseStorage(),
   entitlements: rules,
+	expectedId: customerId,
+	expectedDeviceId: deviceId,
 );
 await licensing.initialize();
+final syncResult = await licensing.sync(
+  AtomCyouSyncClient(
+    baseUri: Uri.parse('https://atom.cyou'),
+    project: 'my-project',
+  ),
+  customerId,
+);
 final result = await licensing.importLicense(
   certificateText,
   model: LicenseModel.replace,
@@ -56,7 +65,10 @@ Keys may instead be supplied as 32 raw bytes, base64/base64url, or an RFC 8410 P
 - `product` must exactly match the running package/bundle identifier.
 - Arbitrary non-negative `planId` values are valid; optional names never affect validity.
 - Free features work without a license.
-- Optional `expectedCoreId` prevents sharing between identities.
+- The signed payload includes the Core/customer identity as `id` and may include `device_id_hash`, a SHA-256 digest of a separate high-entropy installation ID.
+- `SecureDeviceIdentity` generates a random 256-bit installation ID and retains it in platform secure storage. Send that value as CorePort `deviceid`; AtomCyou stores and returns only its signed hash.
+- `expectedId` verifies the owner. `expectedDeviceId` is hashed locally before comparison with `device_id_hash`; it does not replace the owner. Avoid predictable hardware identifiers because an unsalted hash of low-entropy data can be guessed.
+- `sync` downloads only active AtomCyou certificates and verifies every certificate before updating secure local storage. Network errors preserve offline state; authoritative `none` and `suspended` responses remove it.
 - Import validates before storage. Same-plan certificates extend only when their expiration is later.
 - `LicenseModel.separate` (the default) keeps a current license when a different plan is imported.
 - `LicenseModel.replace` immediately replaces a different plan. A higher plan ID is an upgrade and a lower plan ID is a downgrade; both behave identically during import.
