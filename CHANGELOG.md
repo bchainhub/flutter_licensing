@@ -1,3 +1,8 @@
+## 0.5.0
+
+- Allow callers to pin an optional explicit `expectedProduct`, falling back to
+  the running package or bundle identifier when omitted.
+
 ## 0.4.0
 
 - Support device-only certificates when no customer or Core ID exists.

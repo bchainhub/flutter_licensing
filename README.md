@@ -42,6 +42,7 @@ final licensing = FlutterLicensing(
   entitlements: rules,
 	expectedId: customerId,
 	expectedDeviceId: deviceId,
+	expectedProduct: 'onl.tone.app',
 );
 await licensing.initialize();
 final syncResult = await licensing.sync(
@@ -62,7 +63,8 @@ Keys may instead be supplied as 32 raw bytes, base64/base64url, or an RFC 8410 P
 
 ## Behavior
 
-- `product` must exactly match the running package/bundle identifier.
+- `product` must exactly match `expectedProduct` when supplied, otherwise it
+  must match the running package/bundle identifier.
 - Arbitrary non-negative `planId` values are valid; optional names never affect validity.
 - Free features work without a license.
 - The signed payload includes the Core/customer identity as `id` and may include `device_id_hash`, a SHA-256 digest of a separate high-entropy installation ID.

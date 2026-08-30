@@ -51,6 +51,7 @@ final class LicenseVerifier {
   Future<LicenseValidationResult> verify(String certificate,
       {String? expectedId,
       String? expectedDeviceId,
+      String? expectedProduct,
       @Deprecated('Use expectedId') String? expectedCoreId}) async {
     try {
       final envelope = jsonDecode(certificate);
@@ -95,7 +96,8 @@ final class LicenseVerifier {
             LicenseValidationStatus.unsupportedVersion,
             license: parsed);
       }
-      final currentProduct = await _product.getProductIdentifier();
+      final currentProduct =
+          expectedProduct ?? await _product.getProductIdentifier();
       if (currentProduct.isEmpty || parsed.product != currentProduct) {
         return LicenseValidationResult(LicenseValidationStatus.invalidProduct,
             license: parsed);
