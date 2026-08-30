@@ -9,8 +9,11 @@ final class License {
       required this.issuedAt,
       required this.notBefore,
       required this.expiresAt,
-      required this.keyId});
+      required this.keyId,
+      this.deviceIdHash});
   final int version;
+  String get id => coreId;
+  @Deprecated('Use id')
   final String coreId;
   final String licenseId;
   final String product;
@@ -19,4 +22,5 @@ final class License {
   final DateTime notBefore;
   final DateTime expiresAt;
   final String keyId;
+  final String? deviceIdHash;
 }

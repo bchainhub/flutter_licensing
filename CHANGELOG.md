@@ -1,3 +1,10 @@
+## 0.3.0
+
+- Add offline-first AtomCyou synchronization for active licenses.
+- Verify every downloaded certificate before updating secure local storage.
+- Add independent signed customer and device identity validation.
+- Add secure random installation identities and SHA-256 device binding.
+
 ## 0.2.0
 
 - Add explicit separate and replace licensing models.
