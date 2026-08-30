@@ -22,6 +22,7 @@ final class FlutterLicensing {
       FeatureEntitlements? entitlements,
       this.expectedId,
       this.expectedDeviceId,
+      this.expectedProduct,
       @Deprecated('Use expectedId') this.expectedCoreId})
       : _verifier = verifier,
         _storage = storage,
@@ -43,6 +44,9 @@ final class FlutterLicensing {
   final FeatureEntitlements entitlements;
   final String? expectedId;
   final String? expectedDeviceId;
+
+  /// Overrides package/bundle product detection when supplied.
+  final String? expectedProduct;
   @Deprecated('Use expectedId')
   final String? expectedCoreId;
   String? _certificate;
@@ -62,19 +66,22 @@ final class FlutterLicensing {
     }
     return _lastResult = await _verifier.verify(_certificate!,
         expectedId: expectedId ?? expectedCoreId,
-        expectedDeviceId: expectedDeviceId);
+        expectedDeviceId: expectedDeviceId,
+        expectedProduct: expectedProduct);
   }
 
   Future<LicenseValidationResult> importLicense(String certificate,
       {LicenseModel model = LicenseModel.separate}) async {
     final candidate = await _verifier.verify(certificate,
         expectedId: expectedId ?? expectedCoreId,
-        expectedDeviceId: expectedDeviceId);
+        expectedDeviceId: expectedDeviceId,
+        expectedProduct: expectedProduct);
     if (!candidate.isValid) return candidate;
     if (_certificate != null) {
       final existing = await _verifier.verify(_certificate!,
           expectedId: expectedId ?? expectedCoreId,
-          expectedDeviceId: expectedDeviceId);
+          expectedDeviceId: expectedDeviceId,
+          expectedProduct: expectedProduct);
       if (existing.isValid) {
         final oldLicense = existing.license!;
         final newLicense = candidate.license!;
@@ -114,7 +121,8 @@ final class FlutterLicensing {
     for (final certificate in payload.certificates) {
       final validation = await _verifier.verify(certificate,
           expectedId: expectedId ?? expectedCoreId,
-          expectedDeviceId: expectedDeviceId);
+          expectedDeviceId: expectedDeviceId,
+          expectedProduct: expectedProduct);
       validations.add(validation);
     }
     if (validations.any((validation) => !validation.isValid)) {

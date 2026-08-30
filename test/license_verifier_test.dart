@@ -88,6 +88,19 @@ void main() {
         LicenseValidationStatus.expired);
   });
 
+  test('accepts an explicit expected product override', () async {
+    final encoded = await certificate(product: 'onl.tone.app');
+    expect(
+      (await verifier.verify(
+        encoded,
+        expectedId: 'cb_test',
+        expectedProduct: 'onl.tone.app',
+      ))
+          .status,
+      LicenseValidationStatus.valid,
+    );
+  });
+
   test('rejects tampering and unknown keys', () async {
     final valid = jsonDecode(await certificate()) as Map<String, dynamic>;
     valid['signature'] = '${valid['signature']}'.replaceFirst(RegExp('.'), 'A');
