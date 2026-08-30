@@ -132,7 +132,6 @@ final class LicenseVerifier {
   License? _parseTrusted(Map<String, dynamic> value) {
     const required = {
       'v',
-      'id',
       'license_id',
       'product',
       'planId',
@@ -141,7 +140,7 @@ final class LicenseVerifier {
       'expires_at',
       'key_id'
     };
-    const allowed = {...required, 'device_id_hash'};
+    const allowed = {...required, 'id', 'device_id_hash'};
     if (value.keys.toSet().difference(allowed).isNotEmpty ||
         required.difference(value.keys.toSet()).isNotEmpty) {
       return null;
@@ -162,13 +161,14 @@ final class LicenseVerifier {
         issued is! int ||
         notBefore is! int ||
         expires is! int ||
-        !_validString(core, 256) ||
+        (core != null && !_validString(core, 256)) ||
         !_validString(id, 256) ||
         !_validString(product, 255) ||
         !_validString(key, 128) ||
         (deviceHash != null &&
             (deviceHash is! String ||
                 !RegExp(r'^[a-f0-9]{64}$').hasMatch(deviceHash))) ||
+        (core == null && deviceHash == null) ||
         issued < 0 ||
         notBefore < 0 ||
         expires < 0 ||
@@ -179,7 +179,7 @@ final class LicenseVerifier {
     try {
       return License(
           version: v,
-          coreId: core as String,
+          coreId: core as String?,
           licenseId: id as String,
           product: product as String,
           planId: plan,

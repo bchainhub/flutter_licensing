@@ -30,10 +30,11 @@ void main() {
       {String product = 'com.application.app',
       int planId = 67,
       String? deviceId,
+      bool includeCustomerId = true,
       DateTime? expires}) async {
     final payload = utf8.encode(jsonEncode({
       'v': 1,
-      'id': 'cb_test',
+      if (includeCustomerId) 'id': 'cb_test',
       if (deviceId != null)
         'device_id_hash': (await Sha256().hash(utf8.encode(deviceId)))
             .bytes
@@ -99,9 +100,28 @@ void main() {
     final licensing = FlutterLicensing(
         verifier: verifier,
         storage: InMemoryLicenseStorage(),
-        entitlements: entitlements);
+        entitlements: entitlements,
+        expectedId: 'cb_test');
     expect((await licensing.checkFeature(basic)).status,
         LicenseAccessStatus.allowed);
+  });
+
+  test('accepts a device-only signed identity', () async {
+    final encoded = await certificate(
+        deviceId: 'device-only-secret', includeCustomerId: false);
+    final result =
+        await verifier.verify(encoded, expectedDeviceId: 'device-only-secret');
+
+    expect(result.status, LicenseValidationStatus.valid);
+    expect(result.license!.id, isNull);
+    expect(result.license!.deviceIdHash, hasLength(64));
+  });
+
+  test('requires at least one expected identity', () {
+    expect(
+        () => FlutterLicensing(
+            verifier: verifier, storage: InMemoryLicenseStorage()),
+        throwsArgumentError);
   });
 
   test('sync downloads and validates active licenses before storage', () async {
@@ -134,7 +154,8 @@ void main() {
 
   test('separate licensing keeps a different current plan', () async {
     final storage = InMemoryLicenseStorage();
-    final licensing = FlutterLicensing(verifier: verifier, storage: storage);
+    final licensing = FlutterLicensing(
+        verifier: verifier, storage: storage, expectedId: 'cb_test');
     await licensing.importLicense(await certificate(planId: 1));
 
     final result = await licensing.importLicense(await certificate(planId: 2));
@@ -145,7 +166,8 @@ void main() {
 
   test('replace licensing immediately upgrades or downgrades', () async {
     final storage = InMemoryLicenseStorage();
-    final licensing = FlutterLicensing(verifier: verifier, storage: storage);
+    final licensing = FlutterLicensing(
+        verifier: verifier, storage: storage, expectedId: 'cb_test');
     await licensing.importLicense(await certificate(planId: 1));
 
     var result = await licensing.importLicense(await certificate(planId: 2),
@@ -159,7 +181,8 @@ void main() {
 
   test('same plan only extends to a later expiration', () async {
     final storage = InMemoryLicenseStorage();
-    final licensing = FlutterLicensing(verifier: verifier, storage: storage);
+    final licensing = FlutterLicensing(
+        verifier: verifier, storage: storage, expectedId: 'cb_test');
     final later = now.add(const Duration(days: 60));
     await licensing.importLicense(await certificate(expires: later));
 

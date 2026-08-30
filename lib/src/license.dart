@@ -2,7 +2,7 @@
 final class License {
   const License(
       {required this.version,
-      required this.coreId,
+      this.coreId,
       required this.licenseId,
       required this.product,
       required this.planId,
@@ -12,9 +12,9 @@ final class License {
       required this.keyId,
       this.deviceIdHash});
   final int version;
-  String get id => coreId;
+  String? get id => coreId;
   @Deprecated('Use id')
-  final String coreId;
+  final String? coreId;
   final String licenseId;
   final String product;
   final int planId;
