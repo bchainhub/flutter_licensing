@@ -1,3 +1,9 @@
+## 0.4.0
+
+- Support device-only certificates when no customer or Core ID exists.
+- Require at least one expected customer/Core or device identity.
+- Add hash-based `syncByDevice` without exposing the raw device secret in URLs.
+
 ## 0.3.0
 
 - Add offline-first AtomCyou synchronization for active licenses.

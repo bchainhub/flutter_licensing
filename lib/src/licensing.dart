@@ -1,3 +1,4 @@
+import 'device_identity.dart';
 import 'entitlements.dart';
 import 'license.dart';
 import 'storage.dart';
@@ -24,10 +25,19 @@ final class FlutterLicensing {
       @Deprecated('Use expectedId') this.expectedCoreId})
       : _verifier = verifier,
         _storage = storage,
-        entitlements = entitlements ?? FeatureEntitlements(),
-        assert(expectedId == null ||
-            expectedCoreId == null ||
-            expectedId == expectedCoreId);
+        entitlements = entitlements ?? FeatureEntitlements() {
+    if (expectedId != null &&
+        expectedCoreId != null &&
+        expectedId != expectedCoreId) {
+      throw ArgumentError('expectedId and expectedCoreId must match.');
+    }
+    if (expectedId == null &&
+        expectedCoreId == null &&
+        expectedDeviceId == null) {
+      throw ArgumentError(
+          'At least one customer/Core ID or device ID is required.');
+    }
+  }
   final LicenseVerifier _verifier;
   final LicenseStorage _storage;
   final FeatureEntitlements entitlements;
@@ -116,6 +126,16 @@ final class FlutterLicensing {
       _lastResult = validations.first;
     }
     return LicenseSynchronizationResult(payload.status, validations);
+  }
+
+  /// Synchronizes a device-only license by hash, keeping the raw installation
+  /// secret out of the public request URL.
+  Future<LicenseSynchronizationResult> syncByDevice(
+      AtomCyouSyncClient client, SecureDeviceIdentity identity) async {
+    if (expectedDeviceId == null) {
+      throw StateError('expectedDeviceId is required for device sync.');
+    }
+    return sync(client, await identity.hash());
   }
 
   Future<bool> hasValidLicense() async => (await validateLicense()).isValid;
